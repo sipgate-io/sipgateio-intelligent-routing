@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import { env } from 'process';
 import { WebhookResponse, createWebhookModule } from 'sipgateio';
 
 dotenv.config();
@@ -12,9 +13,17 @@ if (!process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS) {
   process.exit();
 }
 
-const serverAddress = process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS;
-const hostname = process.env.HOSTNAME || 'localhost';
-const redirectNumber = process.env.REDIRECT_PHONENUMBER;
+if (!process.env.CENTRAL_SERVICE_PHONE || !process.env.SERVICE_PHONES) {
+  console.error(
+    'ERROR: You need to set the redirect phonenumber and the service phones!\n',
+  );
+  process.exit();
+}
+
+const serverAddress: string = process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS;
+const hostname: string = process.env.HOSTNAME || 'localhost';
+const centralServiceNumber: string = process.env.CENTRAL_SERVICE_PHONE;
+const serviceTeamNumbers: string[] = process.env.SERVICE_PHONES.split(',');
 
 const webhookModule = createWebhookModule();
 webhookModule
