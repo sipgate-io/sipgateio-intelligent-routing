@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
-import { env } from 'process';
 import { WebhookResponse, createWebhookModule } from 'sipgateio';
+import getRandomIntInRange from './util';
 
 dotenv.config();
 
@@ -44,9 +44,13 @@ webhookModule
       console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
 
       console.log('Redirecting...');
+
+      const redirectnumber: string =
+        serviceTeamNumbers[getRandomIntInRange(serviceTeamNumbers.length)];
+
       return WebhookResponse.redirectCall({
         anonymous: true,
-        numbers: [],
+        numbers: [redirectnumber],
       });
     });
   });
