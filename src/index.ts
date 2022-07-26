@@ -1,18 +1,9 @@
 import * as dotenv from 'dotenv';
-import {
-  createConnection,
-  DataSource,
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { WebhookResponse, createWebhookModule } from 'sipgateio';
-import getRandomIntInRange from './util';
-// import AppDataSource from "./dataSource.js";
+import { createWebhookModule, WebhookResponse } from 'sipgateio';
+import { CallHistory, db } from './db';
+import getRedirectNumber from './logic';
 
 dotenv.config();
-
-const port = 8080;
 
 if (!process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS) {
   console.error(
@@ -21,7 +12,7 @@ if (!process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS) {
   process.exit();
 }
 
-if (!process.env.CENTRAL_SERVICE_PHONE || !process.env.SERVICE_PHONES) {
+if (!process.env.SERVICE_PHONES) {
   console.error(
     'ERROR: You need to set the redirect phonenumber and the service phones!\n',
   );
@@ -29,45 +20,18 @@ if (!process.env.CENTRAL_SERVICE_PHONE || !process.env.SERVICE_PHONES) {
 }
 
 const serverAddress: string = process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS;
-const hostname: string = process.env.HOSTNAME || 'localhost';
-const centralServiceNumber: string = process.env.CENTRAL_SERVICE_PHONE;
+const hostname: string = process.env.DATABASE_HOST || 'localhost';
 const serviceTeamNumbers: string[] = process.env.SERVICE_PHONES.split(',');
 
-@Entity()
-class CallHistory {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  customerPhone: string;
-
-  @Column()
-  servicePhone: string;
-
-  @Column()
-  acceptedCalls: number;
-}
-
-const AppDataSource: DataSource = new DataSource({
-  type: 'mysql',
-  host: hostname,
-  username: 'root',
-  password: 'root',
-  port: 3306,
-  database: 'io-labs-telephone-status-request',
-  entities: [CallHistory],
-  synchronize: true,
-});
-
-AppDataSource.initialize().then(() => {
-  console.log('initialized.');
-  AppDataSource.synchronize();
+db.initialize().then(async () => {
+  console.log('Database initialized 🗃️');
+  db.synchronize();
 });
 
 const webhookModule = createWebhookModule();
 webhookModule
   .createServer({
-    port,
+    port: 8080,
     serverAddress,
     hostname,
   })
@@ -79,13 +43,14 @@ webhookModule
         'Ready for calls 📞',
     );
 
-    webhookServer.onNewCall((newCallEvent) => {
+    webhookServer.onNewCall(async (newCallEvent) => {
       console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
 
-      console.log('Redirecting...');
-
-      const redirectnumber: string =
-        serviceTeamNumbers[getRandomIntInRange(serviceTeamNumbers.length)];
+      const redirectnumber = await getRedirectNumber(
+        newCallEvent.from,
+        db,
+        serviceTeamNumbers,
+      );
 
       return WebhookResponse.redirectCall({
         anonymous: true,
@@ -95,39 +60,23 @@ webhookModule
 
     webhookServer.onHangUp(async (newHangupEvent) => {
       console.log(
-        `New hangup from ${newHangupEvent.from} to ${newHangupEvent.to} (answering: ${newHangupEvent.answeringNumber})`,
+        `New hangup from ${newHangupEvent.from} to ${newHangupEvent.to} (call was redirected to: ${newHangupEvent.answeringNumber})`,
       );
-      await AppDataSource.createQueryBuilder()
-        .insert()
-        .into(CallHistory)
-        .values([
-          {
-            customerPhone: '+4945555555555550',
-            servicePhone: '+4945555555555559',
-            acceptedCalls: 8,
-          },
-          {
-            customerPhone: '+4945555555555550',
-            servicePhone: '+4945555555555558',
-            acceptedCalls: 3,
-          },
-          {
-            customerPhone: '+4945555555555550',
-            servicePhone: '+4945555555555557',
-            acceptedCalls: 2,
-          },
-          {
-            customerPhone: '+4945555555555550',
-            servicePhone: '+4945555555555556',
-            acceptedCalls: 9,
-          },
-        ])
-        .execute();
 
-      const results = await AppDataSource.createQueryBuilder()
-        .select('*')
-        .from(CallHistory, 'call_history')
-        .execute();
-      console.log(results);
+      if (newHangupEvent.answeringNumber) {
+        await db
+          .createQueryBuilder()
+          .insert()
+          .into(CallHistory)
+          .values([
+            {
+              customerPhone: newHangupEvent.from,
+              servicePhone: newHangupEvent.answeringNumber,
+            },
+          ])
+          .execute();
+      }
     });
   });
+
+export default CallHistory;
