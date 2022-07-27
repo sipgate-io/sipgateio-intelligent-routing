@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { createWebhookModule, WebhookResponse } from 'sipgateio';
+import { createWebhookModule, sipgateIO, WebhookResponse } from 'sipgateio';
 import { CallHistory, db } from './db';
 import getRedirectNumber from './logic';
 
@@ -28,6 +28,11 @@ db.initialize().then(async () => {
   db.synchronize();
 });
 
+const client = sipgateIO({
+  tokenId: process.env.SIPGATE_TOKEN_ID || '',
+  token: process.env.SIPGATE_TOKEN || '',
+});
+
 const webhookModule = createWebhookModule();
 webhookModule
   .createServer({
@@ -46,7 +51,13 @@ webhookModule
     webhookServer.onNewCall(async (newCallEvent) => {
       console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
 
-      const redirectnumber = await getRedirectNumber(
+      if (newCallEvent.direction === 'out') {
+        return WebhookResponse.playAudio({
+          announcement: 'https://static.sipgate.com/examples/wav/example.wav',
+        });
+      }
+
+      const redirectNumber = await getRedirectNumber(
         newCallEvent.from,
         db,
         serviceTeamNumbers,
@@ -54,24 +65,23 @@ webhookModule
 
       return WebhookResponse.redirectCall({
         anonymous: true,
-        numbers: [redirectnumber],
+        numbers: [redirectNumber],
       });
     });
 
-    webhookServer.onHangUp(async (newHangupEvent) => {
-      console.log(
-        `New hangup from ${newHangupEvent.from} to ${newHangupEvent.to} (call was redirected to: ${newHangupEvent.answeringNumber})`,
-      );
-
-      if (newHangupEvent.answeringNumber) {
+    webhookServer.onAnswer(async (newAnswerEvent) => {
+      if (newAnswerEvent.direction === 'in') {
+        console.log(
+          `New answer from ${newAnswerEvent.from} to ${newAnswerEvent.answeringNumber}`,
+        );
         await db
           .createQueryBuilder()
           .insert()
           .into(CallHistory)
           .values([
             {
-              customerPhone: newHangupEvent.from,
-              servicePhone: newHangupEvent.answeringNumber,
+              customerPhone: newAnswerEvent.from,
+              servicePhone: newAnswerEvent.answeringNumber,
             },
           ])
           .execute();

@@ -11,6 +11,7 @@ async function getRedirectNumber(
 ): Promise<string> {
   let redirectNumber = '';
   let maxAcceptedCalls = 0;
+  let totalAcceptedCalls = 0;
 
   serviceTeamNumbers.forEach(async (servicePhone) => {
     const acceptedCalls = await database
@@ -29,16 +30,8 @@ async function getRedirectNumber(
       maxAcceptedCalls = acceptedCalls;
       redirectNumber = servicePhone;
     }
+    totalAcceptedCalls += acceptedCalls;
   });
-
-  const totalAcceptedCalls = await database
-    .createQueryBuilder()
-    .select('*')
-    .from(CallHistory, 'call_history')
-    .where(`call_history.customerPhone = :customerPhone`, {
-      customerPhone,
-    })
-    .getCount();
 
   if (maxAcceptedCalls > FACTOR * totalAcceptedCalls) {
     return redirectNumber;
