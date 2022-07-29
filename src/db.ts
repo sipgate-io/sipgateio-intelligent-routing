@@ -13,6 +13,12 @@ export class CallHistory {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({
+    type: 'datetime',
+    default: () => 'NOW()',
+  })
+  timestamp: Date;
+
   @Column()
   customerPhone: string;
 
