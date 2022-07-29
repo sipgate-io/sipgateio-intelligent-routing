@@ -13,24 +13,23 @@ if (!process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS) {
 }
 
 if (!process.env.SERVICE_PHONES) {
-  console.error(
-    'ERROR: You need to set the redirect phonenumber and the service phones!\n',
-  );
+  console.error('ERROR: You need to set the service phones!\n');
+  process.exit();
+}
+
+if (!process.env.CENTRAL_SERVICE_PHONE) {
+  console.error('ERROR: You need to set the central phonenumber!\n');
   process.exit();
 }
 
 const serverAddress: string = process.env.SIPGATE_WEBHOOK_SERVER_ADDRESS;
 const hostname: string = process.env.DATABASE_HOST || 'localhost';
-const serviceTeamNumbers: string[] = process.env.SERVICE_PHONES.split(',');
+const serviceTeamNumbers: string[] = process.env.SERVICE_PHONES.split(','); // all active phones
+const centralPhone: string = process.env.CENTRAL_SERVICE_PHONE || '';
 
 db.initialize().then(async () => {
   console.log('Database initialized 🗃️');
   db.synchronize();
-});
-
-const client = sipgateIO({
-  tokenId: process.env.SIPGATE_TOKEN_ID || '',
-  token: process.env.SIPGATE_TOKEN || '',
 });
 
 const webhookModule = createWebhookModule();
@@ -51,9 +50,10 @@ webhookModule
     webhookServer.onNewCall(async (newCallEvent) => {
       console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
 
-      if (newCallEvent.direction === 'out') {
+      if (newCallEvent.from === centralPhone) {
         return WebhookResponse.playAudio({
           announcement: 'https://static.sipgate.com/examples/wav/example.wav',
+          // announcement: 'https://github.com/sipgate-io/sipgateio-intelligent-routing/blob/main/res/redirect.wav?raw=true'
         });
       }
 
@@ -70,9 +70,10 @@ webhookModule
     });
 
     webhookServer.onAnswer(async (newAnswerEvent) => {
-      if (newAnswerEvent.direction === 'in') {
+      // ignore answerEvents from central phone
+      if (newAnswerEvent.from !== centralPhone) {
         console.log(
-          `New answer from ${newAnswerEvent.from} to ${newAnswerEvent.answeringNumber}`,
+          `New answer: ${newAnswerEvent.from} by ${newAnswerEvent.answeringNumber}`,
         );
         await db
           .createQueryBuilder()
