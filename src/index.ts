@@ -47,14 +47,13 @@ webhookModule
         'Ready for calls 📞',
     );
 
-    webhookServer.onNewCall(async (newCallEvent) => respondToNewCall(
-        newCallEvent,
-        centralPhone,
-        db,
-        serviceTeamNumbers,
-      ));
+    webhookServer.onNewCall(async (newCallEvent) =>
+      respondToNewCall(newCallEvent, centralPhone, db, serviceTeamNumbers),
+    );
 
-    webhookServer.onAnswer(async (newAnswerEvent) => respondToOnAnswer(newAnswerEvent, centralPhone, db));
+    webhookServer.onAnswer(async (newAnswerEvent) =>
+      respondToOnAnswer(newAnswerEvent, centralPhone, db),
+    );
   });
 
 export default CallHistory;
