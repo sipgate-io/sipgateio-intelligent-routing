@@ -1,10 +1,12 @@
+import { NewCallEvent , WebhookResponse } from 'sipgateio';
 import { DataSource } from 'typeorm';
+import { AnswerEvent, WebhookResponseInterface } from 'sipgateio/dist/webhook';
 import CallHistory from './index';
 import getRandomIntInRange from './util';
 
 const FACTOR = 0.6;
 
-async function getRedirectNumber(
+export async function getRedirectNumber(
   customerPhone: string,
   database: DataSource,
   serviceTeamNumbers: string[],
@@ -45,4 +47,53 @@ async function getRedirectNumber(
   return serviceTeamNumbers[getRandomIntInRange(serviceTeamNumbers.length)];
 }
 
-export default getRedirectNumber;
+export async function respondToNewCall(
+  newCallEvent: NewCallEvent,
+  centralPhone: string,
+  db: DataSource,
+  serviceTeamNumbers: string[],
+) {
+  console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
+
+  if (newCallEvent.from === centralPhone) {
+    return WebhookResponse.playAudio({
+      announcement: 'https://static.sipgate.com/examples/wav/example.wav',
+      // announcement: 'https://github.com/sipgate-io/sipgateio-intelligent-routing/blob/main/res/redirect.wav?raw=true'
+    });
+  }
+
+  const redirectNumber = await getRedirectNumber(
+    newCallEvent.from,
+    db,
+    serviceTeamNumbers,
+  );
+
+  return WebhookResponse.redirectCall({
+    anonymous: true,
+    numbers: [redirectNumber],
+  });
+}
+
+export async function respondToOnAnswer(
+  newAnswerEvent: AnswerEvent,
+  centralPhone: string,
+  db: DataSource,
+) {
+  // ignore answerEvents from central phone
+  if (newAnswerEvent.from !== centralPhone) {
+    console.log(
+      `New answer: ${newAnswerEvent.from} by ${newAnswerEvent.answeringNumber}`,
+    );
+    await db
+      .createQueryBuilder()
+      .insert()
+      .into(CallHistory)
+      .values([
+        {
+          customerPhone: newAnswerEvent.from,
+          servicePhone: newAnswerEvent.answeringNumber,
+        },
+      ])
+      .execute();
+  }
+}

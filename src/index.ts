@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { createWebhookModule, sipgateIO, WebhookResponse } from 'sipgateio';
 import { CallHistory, db } from './db';
-import getRedirectNumber from './logic';
+import { respondToNewCall, respondToOnAnswer } from './logic';
 
 dotenv.config();
 
@@ -47,47 +47,14 @@ webhookModule
         'Ready for calls 📞',
     );
 
-    webhookServer.onNewCall(async (newCallEvent) => {
-      console.log(`New call from ${newCallEvent.from} to ${newCallEvent.to}`);
-
-      if (newCallEvent.from === centralPhone) {
-        return WebhookResponse.playAudio({
-          announcement: 'https://static.sipgate.com/examples/wav/example.wav',
-          // announcement: 'https://github.com/sipgate-io/sipgateio-intelligent-routing/blob/main/res/redirect.wav?raw=true'
-        });
-      }
-
-      const redirectNumber = await getRedirectNumber(
-        newCallEvent.from,
+    webhookServer.onNewCall(async (newCallEvent) => respondToNewCall(
+        newCallEvent,
+        centralPhone,
         db,
         serviceTeamNumbers,
-      );
+      ));
 
-      return WebhookResponse.redirectCall({
-        anonymous: true,
-        numbers: [redirectNumber],
-      });
-    });
-
-    webhookServer.onAnswer(async (newAnswerEvent) => {
-      // ignore answerEvents from central phone
-      if (newAnswerEvent.from !== centralPhone) {
-        console.log(
-          `New answer: ${newAnswerEvent.from} by ${newAnswerEvent.answeringNumber}`,
-        );
-        await db
-          .createQueryBuilder()
-          .insert()
-          .into(CallHistory)
-          .values([
-            {
-              customerPhone: newAnswerEvent.from,
-              servicePhone: newAnswerEvent.answeringNumber,
-            },
-          ])
-          .execute();
-      }
-    });
+    webhookServer.onAnswer(async (newAnswerEvent) => respondToOnAnswer(newAnswerEvent, centralPhone, db));
   });
 
 export default CallHistory;
