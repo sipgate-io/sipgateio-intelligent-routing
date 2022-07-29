@@ -1,10 +1,17 @@
 import { NewCallEvent, WebhookResponse } from 'sipgateio';
 import { DataSource } from 'typeorm';
-import { AnswerEvent, WebhookResponseInterface } from 'sipgateio/dist/webhook';
+import { AnswerEvent } from 'sipgateio/dist/webhook';
 import getRandomIntInRange from './util';
 import { acceptedCallsCount, createHistoryEntry } from './db';
 
 const FACTOR = 0.6;
+
+function checkRedirectThreshold(
+  maxAcceptedCalls: number,
+  totalAcceptedCalls: number,
+): boolean {
+  return maxAcceptedCalls > FACTOR * totalAcceptedCalls;
+}
 
 export async function getRedirectNumber(
   customerPhone: string,
@@ -33,7 +40,7 @@ export async function getRedirectNumber(
     );
   }
 
-  if (maxAcceptedCalls > FACTOR * totalAcceptedCalls) {
+  if (checkRedirectThreshold(maxAcceptedCalls, totalAcceptedCalls)) {
     console.log(`Redirecting to ${redirectNumber}`);
     return redirectNumber;
   }
