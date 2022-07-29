@@ -10,12 +10,6 @@ You need to have Node.js and NPM installed.
 
 ## Installation & Startup
 
-<!-- A how-to on the installation process.
-This should include a description on how to set environment variables, should they be required.
-Tokens and their scopes should also be explained sufficiently.
-
-Furthermore, the startup process should be explained. -->
-
 Install dependencies by `npm i` and fill a `.env` from the `.env.example` template.
 
 Tunnel a localhost for the webhook calls. You may want to use localhost.run or ngrok.
@@ -31,7 +25,7 @@ You can configure the webhooks as follows:
 
 - Fill in your webhook URL and click save.
 
-Start the Docker container for the database with `docker-compose up -d` and launch the application with `npm start`. After that the PUSH-API is waiting for incoming calls.
+Start the Docker container for the database with `docker-compose up -d` and launch the application with `npm start`. After that the PUSH-API is waiting for incoming calls. If you make changes to the `.env` you may need to restart the container. To shut it down use `docker-compose down` and then start it again.
 
 To make this code example work you need to have configured at least two sipgate phone numbers.
 The first one is your central phone number. It must be assigned to a device, so it can handle incoming calls.
@@ -45,9 +39,6 @@ By the first call you will be redirected to a random service phone.
 After that you get redirected to the preferred phone number if one service phone has answered more than 60% of the calls from that number.
 
 ## Code Walkthrough
-
-<!-- A short and easy to understand explanation on the general code structure. <br/>
-For example: `Request is made` -> `Data is transformed` -> `Data is saved to database` -->
 
 In the `res`-folder we store the announcement that is played when the redirect starts.
 
