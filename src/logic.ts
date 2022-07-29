@@ -12,8 +12,9 @@ async function getRedirectNumber(
   let redirectNumber = '';
   let maxAcceptedCalls = 0;
   let totalAcceptedCalls = 0;
-
-  serviceTeamNumbers.forEach(async (servicePhone) => {
+  /* eslint-disable no-await-in-loop */
+  /* eslint-disable no-restricted-syntax */
+  for (const servicePhone of serviceTeamNumbers) {
     const acceptedCalls = await database
       .createQueryBuilder()
       .select('*')
@@ -31,11 +32,16 @@ async function getRedirectNumber(
       redirectNumber = servicePhone;
     }
     totalAcceptedCalls += acceptedCalls;
-  });
+    console.log(
+      `Service Phone ${servicePhone} has accepted ${acceptedCalls} call(s) by ${customerPhone}`,
+    );
+  }
 
   if (maxAcceptedCalls > FACTOR * totalAcceptedCalls) {
+    console.log(`Redirecting to ${redirectNumber}`);
     return redirectNumber;
   }
+  console.log('Random redirect');
   return serviceTeamNumbers[getRandomIntInRange(serviceTeamNumbers.length)];
 }
 
