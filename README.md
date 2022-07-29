@@ -20,7 +20,22 @@ Install dependencies by `npm i` and fill a `.env` from the `.env.example` templa
 
 Tunnel a localhost for the webhook calls. You may want to use localhost.run or ngrok.
 
+The webhook URL must be copied to [sipgate.io](https://console.sipgate.com/webhooks/urls).
+You can configure the webhooks as follows:
+
+- Navigate to console.sipgate.com and login with your sipgate account credentials.
+
+- Select the Webhooks > URLs tab in the left side menu
+
+- Click the gear icon of the Incoming or Outgoing entry
+
+- Fill in your webhook URL and click save.
+
 Start the Docker container for the database with `docker-compose up -d` and launch the application with `npm start`. After that the PUSH-API is waiting for incoming calls.
+
+To make this code example work you need to have configured at least two sipgate phone numbers.
+The first one is your central phone number. It must be assigned to a device, so it can handle incoming calls.
+The others will be considered service numbers. These numbers must also be assigned to a device. For testing it is enough when all phone numbers are assigned to the same device.
 
 ## Example Usecase
 
@@ -34,11 +49,14 @@ After that you get redirected to the preferred phone number if one service phone
 <!-- A short and easy to understand explanation on the general code structure. <br/>
 For example: `Request is made` -> `Data is transformed` -> `Data is saved to database` -->
 
-## Troubleshoot
+In the `res`-folder we store the announcement that is played when the redirect starts.
 
-<!-- A description of common errors and how to fix them.  -->
+In `src` we store all the `.ts`-files.
 
-# License
+First, the `db.ts` declares the database structure and the CallHistory-table.
 
-<!-- For example:
-This project is licensed under The Unlicense (see [LICENSE](https://github.com/sipgate-io/sipgateio-sendsms-python/blob/master/LICENSE) file). -->
+In the `index.ts` we initiate our database and create the webhook respond server.
+
+The `logic.ts` contains the logic like redirect functions. Event processing is also handled here.
+
+The `util.ts` provides utility functions.
