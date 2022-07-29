@@ -1,7 +1,7 @@
 {
-  "name": "sipgateio-boilerplate",
+  "name": "sipgateio-intelligent-routing",
   "version": "1.0.0",
-  "description": "A template for new sipgate.io projects containing Prettier, ESLint, Husky and TypeScript configuration files",
+  "description": "This repo showcases an intelligent routing service which is able to choose a preferred phoneline for a caller.",
   "main": "src/index.ts",
   "scripts": {
     "start": "ts-node .",
@@ -14,14 +14,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/sipgate-io/sipgateio-boilerplate.git"
+    "url": "git+ssh://git@github.com/sipgate-io/sipgateio-intelligent-routing.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/sipgate-io/sipgateio-boilerplate/issues"
+    "url": "https://github.com/sipgate-io/sipgateio-intelligent-routing/issues"
   },
-  "homepage": "https://github.com/sipgate-io/sipgateio-boilerplate#readme",
+  "homepage": "https://github.com/sipgate-io/sipgateio-intelligent-routing#readme",
   "devDependencies": {
     "@types/jest": "^28.1.4",
     "@types/node": "^18.0.3",
