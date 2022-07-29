@@ -1,8 +1,8 @@
-import { NewCallEvent , WebhookResponse } from 'sipgateio';
+import { NewCallEvent, WebhookResponse } from 'sipgateio';
 import { DataSource } from 'typeorm';
 import { AnswerEvent, WebhookResponseInterface } from 'sipgateio/dist/webhook';
-import CallHistory from './index';
 import getRandomIntInRange from './util';
+import { acceptedCallsCount, createHistoryEntry } from './db';
 
 const FACTOR = 0.6;
 
@@ -17,17 +17,11 @@ export async function getRedirectNumber(
   /* eslint-disable no-await-in-loop */
   /* eslint-disable no-restricted-syntax */
   for (const servicePhone of serviceTeamNumbers) {
-    const acceptedCalls = await database
-      .createQueryBuilder()
-      .select('*')
-      .from(CallHistory, 'call_history')
-      .where(`call_history.customerPhone = :customerPhone`, {
-        customerPhone,
-      })
-      .andWhere(`call_history.servicePhone = :servicePhone`, {
-        servicePhone,
-      })
-      .getCount();
+    const acceptedCalls = await acceptedCallsCount(
+      database,
+      customerPhone,
+      servicePhone,
+    );
 
     if (acceptedCalls > maxAcceptedCalls) {
       maxAcceptedCalls = acceptedCalls;
@@ -84,16 +78,6 @@ export async function respondToOnAnswer(
     console.log(
       `New answer: ${newAnswerEvent.from} by ${newAnswerEvent.answeringNumber}`,
     );
-    await db
-      .createQueryBuilder()
-      .insert()
-      .into(CallHistory)
-      .values([
-        {
-          customerPhone: newAnswerEvent.from,
-          servicePhone: newAnswerEvent.answeringNumber,
-        },
-      ])
-      .execute();
+    await createHistoryEntry(db, newAnswerEvent);
   }
 }

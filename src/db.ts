@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import { AnswerEvent } from 'sipgateio';
 import { Column, DataSource, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 dotenv.config();
@@ -6,7 +7,7 @@ dotenv.config();
 const host = process.env.DATABASE_HOST || 'localhost';
 const username = process.env.DATABASE_USERNAME || 'admin';
 const password = process.env.DATABASE_PASSWORD || 'root';
-const database = process.env.DATABASE_NAME || 'database';
+const databaseName = process.env.DATABASE_NAME || 'database';
 
 @Entity()
 export class CallHistory {
@@ -32,7 +33,42 @@ export const db: DataSource = new DataSource({
   username,
   password,
   port: 3306,
-  database,
+  database: databaseName,
   entities: [CallHistory],
   synchronize: true,
 });
+
+export async function acceptedCallsCount(
+  database: DataSource,
+  customerPhone: string,
+  servicePhone: string,
+) {
+  return database
+    .createQueryBuilder()
+    .select('*')
+    .from(CallHistory, 'call_history')
+    .where(`call_history.customerPhone = :customerPhone`, {
+      customerPhone,
+    })
+    .andWhere(`call_history.servicePhone = :servicePhone`, {
+      servicePhone,
+    })
+    .getCount();
+}
+
+export async function createHistoryEntry(
+  database: DataSource,
+  answerEvent: AnswerEvent,
+) {
+  await database
+    .createQueryBuilder()
+    .insert()
+    .into(CallHistory)
+    .values([
+      {
+        customerPhone: answerEvent.from,
+        servicePhone: answerEvent.answeringNumber,
+      },
+    ])
+    .execute();
+}
