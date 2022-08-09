@@ -58,8 +58,8 @@ export async function respondToNewCall(
 
   if (newCallEvent.from === centralPhone) {
     return WebhookResponse.playAudio({
-      announcement: 'https://static.sipgate.com/examples/wav/example.wav',
-      // announcement: 'https://github.com/sipgate-io/sipgateio-intelligent-routing/blob/main/res/redirect.wav?raw=true'
+      announcement:
+        'https://github.com/sipgate-io/sipgateio-intelligent-routing/blob/main/res/redirect.wav?raw=true',
     });
   }
 
