@@ -1,7 +1,8 @@
 import * as dotenv from 'dotenv';
-import {createWebhookModule, createDevicesModule, sipgateIO} from 'sipgateio';
+import {createDevicesModule, createNumbersModule, createWebhookModule, sipgateIO} from 'sipgateio';
 import {CallHistory, db} from './db';
 import {respondToNewCall, respondToOnAnswer} from './logic';
+import {Device} from "sipgateio/dist/devices";
 
 dotenv.config();
 
@@ -58,15 +59,33 @@ async function main() {
     const authenticatedWebuser = await client.getAuthenticatedWebuserId();
     const devicesModule = createDevicesModule(client);
     const devices = await devicesModule.getDevices(authenticatedWebuser);
+    let onlineDevices: Device[] = [];
+    devices.forEach(device => {
+            if (device.online) {
+                onlineDevices.push(device)
+            }
+    })
+    onlineDevices.forEach(device => {
+        Object.entries(device).find(([key, value]) => {
+            if (key === 'activePhonelines') console.log(value);
+        })
+    });
 
-    console.log("devices:");
-    printIDs(devices);
-    return devices;
+    const numbersModule = createNumbersModule(client);
+
+    numbersModule
+        .getAllNumbers({ offset: 5, limit: 10 })
+        .then(console.log)
+        .catch(console.error);
+
+    return onlineDevices;
 }
 
 main().then(data => {
-    console.log(data);
-}).catch(error => {
+    console.log(data)
+    //console.log(data.forEach(entry => entry.id))
+})
+    .catch(error => {
     console.log(error);
 });
 const webhookModule = createWebhookModule();
@@ -84,6 +103,7 @@ webhookModule
             'Ready for calls 📞',
         );
 
+        //TODO: Check for online Devices on new Call?
         webhookServer.onNewCall(async (newCallEvent) =>
             respondToNewCall(newCallEvent, centralPhone, db, serviceTeamNumbers),
         );
