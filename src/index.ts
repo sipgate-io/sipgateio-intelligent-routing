@@ -33,10 +33,6 @@ db.initialize().then(async () => {
   db.synchronize();
 });
 
-type PhoningDevice = Device & {
-  activePhonelines: { id: string; alias: string }[];
-};
-
 async function getOnlineNumbers(
   client: SipgateIOClient,
   authenticatedWebuser: string,
@@ -44,11 +40,9 @@ async function getOnlineNumbers(
 ) {
   const devicesModule = createDevicesModule(client);
   const devices = await devicesModule.getDevices(authenticatedWebuser);
-  const onlineDevices: PhoningDevice[] = devices.filter(
-    (device) => device.online,
-  ) as PhoningDevice[];
+  const onlineDevices: Device[] = devices.filter((device) => device.online);
   const onlineIds = onlineDevices.flatMap((device) =>
-    device.activePhonelines.map((phoneline) => phoneline.id),
+    (device.activePhonelines ?? []).map((phoneline) => phoneline.id),
   );
   const onlineNumbers = onlineIds.flatMap((id) =>
     numbers
