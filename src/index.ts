@@ -60,7 +60,9 @@ async function main() {
 
   const numbersModule = createNumbersModule(client);
   const authenticatedWebuser = await client.getAuthenticatedWebuserId();
-  const numbers = await numbersModule.getAllNumbers();
+  const numbers = (await numbersModule.getAllNumbers()).items.filter(
+    (number) => number.number !== centralPhone,
+  );
 
   const webhookModule = createWebhookModule();
   const webhookServer = await webhookModule.createServer({
@@ -80,7 +82,7 @@ async function main() {
     const onlineNumbers = await getOnlineNumbers(
       client,
       authenticatedWebuser,
-      numbers.items,
+      numbers,
     );
     return respondToNewCall(newCallEvent, centralPhone, db, onlineNumbers);
   });
