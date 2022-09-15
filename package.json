@@ -39,7 +39,7 @@
     "typescript": "^4.7.4"
   },
   "lint-staged": {
-    "*.{ts,js}": "eslint --fix",
+    "*.{ts,js}": "eslint --fix --max-warnings 0",
     "*.{ts,js,css,md}": "prettier --write"
   },
   "dependencies": {
