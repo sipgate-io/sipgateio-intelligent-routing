@@ -13,33 +13,20 @@ import { respondToNewCall, respondToOnAnswer } from './logic';
 
 dotenv.config();
 
-if (!process.env.WEBHOOK_URL) {
-  console.error(
-    'ERROR: You need to set a server address for the followup webhook events!\n',
-  );
-  process.exit();
+function getEnvVariable(variableName: string, defaultValue?: string): string {
+  const variable = process.env[variableName] ?? defaultValue;
+  if (!variable) {
+    console.error(`ERROR: You need to set ${variableName} in .env!\n`);
+    process.exit();
+  }
+  return variable;
 }
 
-if (!process.env.CENTRAL_SERVICE_PHONE) {
-  console.error('ERROR: You need to set the central phonenumber!\n');
-  process.exit();
-}
-
-if (!process.env.TOKEN_ID) {
-  console.error('ERROR: You need to set the token id!\n');
-  process.exit();
-}
-
-if (!process.env.TOKEN) {
-  console.error('ERROR: You need to set the token!\n');
-  process.exit();
-}
-
-const serverAddress: string = process.env.WEBHOOK_URL;
-const hostname: string = process.env.DATABASE_HOST || 'localhost';
-const centralPhone: string = process.env.CENTRAL_SERVICE_PHONE || '';
-const personalAccessTokenId = process.env.TOKEN_ID || '';
-const personalAccessToken = process.env.TOKEN || '';
+const serverAddress = getEnvVariable('WEBHOOK_URL');
+const hostname = getEnvVariable('DATABASE_HOST', 'localhost');
+const centralPhone = getEnvVariable('CENTRAL_SERVICE_PHONE');
+const personalAccessTokenId = getEnvVariable('TOKEN_ID');
+const personalAccessToken = getEnvVariable('TOKEN');
 
 db.initialize().then(async () => {
   console.log('Database initialized 🗃️');
